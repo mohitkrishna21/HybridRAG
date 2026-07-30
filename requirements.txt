@@ -1,0 +1,13 @@
+gradio
+pymupdf
+python-docx
+sentence-transformers
+rank-bm25
+lancedb
+langchain-groq
+python-dotenv
+numpy
+fastapi
+uvicorn
+python-multipart
+pytest
