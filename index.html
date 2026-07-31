@@ -1113,6 +1113,15 @@
       const chunks = Number.isFinite(Number(data.chunks)) ? Number(data.chunks) : 0;
       const chunkLabel = chunks === 1 ? 'chunk' : 'chunks';
       setUploadState('success', `Ready — ${chunks} ${chunkLabel} indexed successfully`);
+
+      // Clear chat history and reset UI when a new document is uploaded
+      history.length = 0;
+      // Remove all message bubbles but keep the welcome screen
+      Array.from(messagesEl.children).forEach(child => {
+        if (child !== welcomeEl) child.remove();
+      });
+      welcomeEl.style.display = '';
+
     } catch (error) {
       setUploadState('error', 'Upload failed — please try again');
     }

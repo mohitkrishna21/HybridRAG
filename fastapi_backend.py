@@ -28,6 +28,11 @@ chunks = None
 embedding_model = load_embedding_model()
 reranker = load_reranker()
 
+GREETINGS = ["hello", "hi", "hey", "how are you", "good morning", "good evening", "what's up", "howdy", "greetings", "sup"]
+
+def is_greeting(message):
+    return any(g in message.lower() for g in GREETINGS)
+
 class MessageRequest(BaseModel):
     message: str
     history: List[dict] = []
@@ -67,6 +72,9 @@ async def chat(request: MessageRequest):
         guardrail_triggered = True
         logging.info(f"INPUT GUARDRAIL TRIGGERED | query: {request.message}")
         return {"answer": "I can't process this request as it appears to violate safety guidelines."}
+    
+    if is_greeting(request.message):
+        return {"answer": "Hello! I'm HybridRAG, your document assistant. Upload a document and I'll answer anything about its content!"}
 
     if table is None:
         return {"answer": "Please upload a document first."}
