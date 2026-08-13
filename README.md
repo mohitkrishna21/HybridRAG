@@ -75,22 +75,19 @@ LanceDB Indexing ─────── chunk embeddings stored persistently on d
 BM25 Indexing ────────── tokenized chunks indexed for keyword search
 ```
 
-
 ## Two Architectures
 
-**Gradio Standalone (Docker-ready):**
+**Gradio Standalone:**
 ```bash
 python app.py
 ```
 Visit `http://localhost:7860`
 
-**FastAPI + Custom Dark UI:**
+**FastAPI + Custom UI:**
 ```bash
-uvicorn fastapi_backend:app --reload
+python -m uvicorn fastapi_backend:app --reload
 ```
 Visit `http://localhost:8000`
-
----
 
 ## Tech Stack
 
@@ -127,17 +124,14 @@ GROQ_API_KEY=your_key_here
 Get a free key at [console.groq.com](https://console.groq.com).
 
 ---
-
 ## Run with Docker
 
 ```bash
 docker build -t hybridrag .
-docker run -p 7860:7860 --env-file .env -v huggingface_cache:/root/.cache/huggingface hybridrag
+docker run -p 8000:8000 --env-file .env -v huggingface_cache:/root/.cache/huggingface hybridrag
 ```
 
-Visit `http://localhost:7860`
-
----
+Visit `http://localhost:8000`
 
 ## Run Tests
 
