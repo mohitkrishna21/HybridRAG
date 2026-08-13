@@ -21,54 +21,60 @@ Most RAG demos use a single embedding model for retrieval. HybridRAG combines fo
 ## Pipeline Architecture
 
 **Online phase (runs per query, in real time):**
+
+```
 User Query
-│
-▼
-Input Guardrail ← regex-based prompt injection detection
-│
-▼
-Greeting Check ← intercepts greetings before pipeline runs
-│
-▼
+    │
+    ▼
+Input Guardrail       ← regex-based prompt injection detection
+    │
+    ▼
+Greeting Check        ← intercepts greetings before pipeline runs
+    │
+    ▼
 Semantic Search ──┐
-├── parallel retrieval, top-20 each
-Keyword Search ───┘ (all-MiniLM-L6-v2 + BM25Okapi)
-│
-▼
-RRF Fusion ← reciprocal rank fusion merges both ranked lists
-│
-▼
-Cross-Encoder Rerank ← ms-marco-MiniLM-L-6-v2 rescores top-20, returns top-5
-│
-▼
-Answer Generation ← llama-3.3-70b-versatile via Groq, strict context-only prompt
-│
-▼
-Output Guardrail ← PII and safety check on generated answer
-│
-▼
-Faithfulness Eval ← sentence-level semantic similarity score, logged per response
-│
-▼
-Response + Logging ← answer returned, latency + faithfulness + guardrail logged
+                  ├── parallel retrieval, top-20 each
+Keyword Search ───┘   (all-MiniLM-L6-v2 + BM25Okapi)
+    │
+    ▼
+RRF Fusion            ← reciprocal rank fusion merges both ranked lists
+    │
+    ▼
+Cross-Encoder Rerank  ← ms-marco-MiniLM-L-6-v2 rescores top-20, returns top-5
+    │
+    ▼
+Answer Generation     ← llama-3.3-70b-versatile via Groq, strict context-only prompt
+    │
+    ▼
+Output Guardrail      ← PII and safety check on generated answer
+    │
+    ▼
+Faithfulness Eval     ← sentence-level semantic similarity score, logged per response
+    │
+    ▼
+Response + Logging    ← answer returned, latency + faithfulness + guardrail logged
+```
 
 **Offline phase (runs once at document upload):**
+
+```
 Document Upload
-│
-▼
-Format Detection ← PDF / TXT / DOCX (max 20MB enforced)
-│
-▼
-Text Extraction ← PyMuPDF (PDF) / python-docx (DOCX) / built-in (TXT)
-│
-▼
-Semantic Chunking ← sentence embeddings + cosine similarity boundary detection
-│
-▼
+    │
+    ▼
+Format Detection      ← PDF / TXT / DOCX (max 20MB enforced)
+    │
+    ▼
+Text Extraction       ← PyMuPDF (PDF) / python-docx (DOCX) / built-in (TXT)
+    │
+    ▼
+Semantic Chunking     ← sentence embeddings + cosine similarity boundary detection
+    │
+    ▼
 LanceDB Indexing ─────── chunk embeddings stored persistently on disk
-│
+    │
 BM25 Indexing ────────── tokenized chunks indexed for keyword search
----
+```
+
 
 ## Two Architectures
 
