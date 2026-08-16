@@ -6,12 +6,13 @@ import os
 import shutil
 import time
 import logging
+import re
 from rag_pipeline import (
     load_document, load_embedding_model, load_reranker, semantic_chunk,
     create_lancedb_table, create_bm25_index,
     semantic_search, bm25_search, reciprocal_rank_fusion,
     rerank, generate_answer, check_input_safety,
-    check_output_safety, evaluate_faithfulness
+    check_output_safety, evaluate_faithfulness,log_query
 )
 
 logging.basicConfig(
@@ -28,11 +29,17 @@ chunks = None
 embedding_model = load_embedding_model()
 reranker = load_reranker()
 
-GREETINGS = ["hello", "hi", "hey", "how are you", "good morning", "good evening", "what's up", "howdy", "greetings", "sup"]
+
+GREETINGS = ["hello", "hi", "hey", "how are you", "good morning", 
+             "good evening", "howdy", "greetings", "sup"]
 
 def is_greeting(message):
-    return any(g in message.lower() for g in GREETINGS)
-
+    message_lower = message.lower().strip()
+    return any(
+        re.fullmatch(g, message_lower) or 
+        message_lower in [g, g + "!", g + "?", g + "."]
+        for g in GREETINGS
+    )
 class MessageRequest(BaseModel):
     message: str
     history: List[dict] = []
@@ -70,32 +77,103 @@ async def chat(request: MessageRequest):
 
     if not check_input_safety(request.message):
         guardrail_triggered = True
-        logging.info(f"INPUT GUARDRAIL TRIGGERED | query: {request.message}")
-        return {"answer": "I can't process this request as it appears to violate safety guidelines."}
-    
-    if is_greeting(request.message):
-        return {"answer": "Hello! I'm HybridRAG, your document assistant. Upload a document and I'll answer anything about its content!"}
+        latency = time.time() - start_time
 
+        logging.info(
+            f"INPUT GUARDRAIL TRIGGERED | query: {request.message}"
+        )
+
+        log_query(
+            request.message,
+            latency,
+            None,
+            guardrail_triggered
+        )
+
+        return {
+            "answer": "I can't process this request as it appears to violate safety guidelines."
+        }
+
+    if is_greeting(request.message):
+        log_query(request.message, time.time() - start_time, None, False)
+        return {
+        "answer": "Hello! I'm HybridRAG, your document assistant. "
+                  "Upload a document and I'll answer anything about its content!"
+        }
     if table is None:
         return {"answer": "Please upload a document first."}
 
-    semantic_results = semantic_search(request.message, table, embedding_model)
-    bm25_results = bm25_search(request.message, bm25_index, chunks)
+    semantic_results = semantic_search(
+        request.message,
+        table,
+        embedding_model
+    )
 
-    fused_results = reciprocal_rank_fusion(semantic_results, bm25_results)
-    reranked_results = rerank(request.message, fused_results, reranker)
+    bm25_results = bm25_search(
+        request.message,
+        bm25_index,
+        chunks
+    )
+
+    fused_results = reciprocal_rank_fusion(
+        semantic_results,
+        bm25_results
+    )
+
+    reranked_results = rerank(
+        request.message,
+        fused_results,
+        reranker
+    )
 
     chat_history = request.history
 
-    answer = generate_answer(request.message, reranked_results, chat_history)
+    answer = generate_answer(
+        request.message,
+        reranked_results,
+        chat_history
+    )
 
     if not check_output_safety(answer):
         guardrail_triggered = True
-        logging.info(f"OUTPUT GUARDRAIL TRIGGERED | query: {request.message}")
-        return {"answer": "I generated a response but it may contain sensitive information, so I can't share it."}
+        latency = time.time() - start_time
 
-    faithfulness = evaluate_faithfulness(answer, reranked_results, embedding_model)
+        logging.info(
+            f"OUTPUT GUARDRAIL TRIGGERED | query: {request.message}"
+        )
+
+        log_query(
+            request.message,
+            latency,
+            None,
+            guardrail_triggered
+        )
+
+        return {
+            "answer": "I generated a response but it may contain sensitive information, "
+                      "so I can't share it."
+        }
+
+    faithfulness = evaluate_faithfulness(
+        answer,
+        reranked_results,
+        embedding_model
+    )
+
     latency = time.time() - start_time
-    logging.info(f"RESPONSE | latency: {latency:.2f}s | faithfulness: {faithfulness:.2f} | guardrail: {guardrail_triggered} | query: {request.message[:50]}")
+
+    logging.info(
+        f"RESPONSE | latency: {latency:.2f}s | "
+        f"faithfulness: {faithfulness:.2f} | "
+        f"guardrail: {guardrail_triggered} | "
+        f"query: {request.message[:50]}"
+    )
+
+    log_query(
+        request.message,
+        latency,
+        faithfulness,
+        guardrail_triggered
+    )
 
     return {"answer": answer}

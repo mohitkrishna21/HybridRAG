@@ -3,5 +3,7 @@
 __pycache__/
 *.pyc
 lancedb_data/
-venv/
+temp_*
 hybridrag.log
+.pytest_cache/
+logs/

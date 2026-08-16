@@ -8,8 +8,32 @@ from dotenv import load_dotenv
 from docx import Document
 import os
 import re
+import csv
+import datetime
 
 load_dotenv()
+
+LOG_PATH = "logs/query_log.csv"
+LOG_HEADERS = ["timestamp", "query", "latency", "faithfulness", "guardrail_triggered"]
+
+
+
+def log_query(query, latency, faithfulness, guardrail_triggered):
+    os.makedirs("logs", exist_ok=True)
+
+    if not os.path.exists(LOG_PATH):
+        with open(LOG_PATH, "w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(LOG_HEADERS)
+
+    with open(LOG_PATH, "a", newline="", encoding="utf-8") as f:
+        csv.writer(f).writerow([
+            datetime.datetime.now().isoformat(),
+            query,
+            latency,
+            faithfulness,
+            guardrail_triggered
+        ])
+        
 
 # Parsing
 def load_document(file_path):

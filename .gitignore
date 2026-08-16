@@ -5,3 +5,4 @@ lancedb_data/
 temp_*
 hybridrag.log
 .pytest_cache/
+logs/
