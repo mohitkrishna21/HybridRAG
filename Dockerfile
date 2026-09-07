@@ -1,6 +1,6 @@
 FROM python:3.11-slim
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements-server.txt .
 RUN pip install -r requirements-server.txt
 COPY . .
 EXPOSE 8000
