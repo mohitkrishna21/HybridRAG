@@ -2,6 +2,11 @@
 
 Upload any document and get precise, grounded answers powered by a full hybrid retrieval pipeline — not just basic semantic search.
 
+## Live Demo
+**[https://hybridrag.mohitkrishna.dev](https://hybridrag.mohitkrishna.dev)**
+
+Deployed on AWS EC2 (N. California) — running continuously with HTTPS.
+
 ![HybridRAG Demo](demo.png)
 
 ---
@@ -42,7 +47,7 @@ RRF Fusion            ← reciprocal rank fusion merges both ranked lists
 Cross-Encoder Rerank  ← ms-marco-MiniLM-L-6-v2 rescores top-20, returns top-5
     │
     ▼
-Answer Generation     ← llama-3.3-70b-versatile via Groq, strict context-only prompt
+Answer Generation     ← openai/gpt-oss-120b via Groq, strict context-only prompt
     │
     ▼
 Output Guardrail      ← PII and safety check on generated answer
@@ -51,7 +56,7 @@ Output Guardrail      ← PII and safety check on generated answer
 Faithfulness Eval     ← sentence-level semantic similarity score, logged per response
     │
     ▼
-Response + Logging    ← answer returned, latency + faithfulness + guardrail triggers logged
+Response + Logging    ← answer returned, latency + faithfulness + guardrail triggers logged to CSV
 ```
 
 **Offline phase (runs once at document upload):**
@@ -86,15 +91,16 @@ BM25 Indexing ────────── tokenized chunks indexed for keywor
 | Keyword search | BM25Okapi (`rank-bm25`) |
 | Vector storage | LanceDB (persistent, unlike FAISS) |
 | Reranking | `cross-encoder/ms-marco-MiniLM-L-6-v2` |
-| LLM | Groq API (`llama-3.3-70b-versatile`) |
+| LLM | Groq API (`openai/gpt-oss-120b`) |
 | Evaluation | Sentence-level semantic faithfulness scoring |
 | Guardrails | Regex-based input/output safety checks |
-| Logging | Per-response latency, faithfulness score, guardrail triggers |
+| Logging | Per-response latency, faithfulness score, guardrail triggers (CSV) |
 | API Backend | FastAPI |
 | Gradio UI | Gradio `ChatInterface` |
 | Custom UI | Vanilla HTML / CSS / JS |
 | Testing | pytest (9 tests) |
-| Deployment | Docker |
+| CI | GitHub Actions (runs tests on every push) |
+| Deployment | AWS EC2 (t3.micro, N. California) + Nginx + Let's Encrypt SSL |
 
 ---
 
@@ -138,14 +144,14 @@ python -m uvicorn fastapi_backend:app --reload
 
 Opens at `http://localhost:8000`
 
-**Option C — Docker (recommended)**
+**Option C — Docker**
 
 ```bash
 docker build -t hybridrag .
 docker run -p 8000:8000 --env-file .env -v huggingface_cache:/root/.cache/huggingface hybridrag
 ```
 
-Opens at `http://localhost:8000`. No local Python setup required — just Docker and a `.env` file with your `GROQ_API_KEY`. The `-v` flag caches HuggingFace model weights so they are not re-downloaded on every container restart.
+Opens at `http://localhost:8000`. The `-v` flag caches HuggingFace model weights so they are not re-downloaded on every container restart.
 
 ---
 
@@ -155,7 +161,7 @@ Opens at `http://localhost:8000`. No local Python setup required — just Docker
 pytest tests/ -v
 ```
 
-9 tests covering input/output guardrails, cosine similarity, document loading, and faithfulness evaluation.
+9 tests covering input/output guardrails, cosine similarity, document loading, and faithfulness evaluation. Tests also run automatically via GitHub Actions on every push.
 
 ---
 
@@ -179,6 +185,10 @@ PDF · TXT · DOCX · Max 20MB
 
 **Temperature 0.2** — lower temperature keeps the LLM closer to retrieved context, reducing hallucination in grounded Q&A tasks.
 
+**CSV structured logging** — every response logs latency, faithfulness score, and guardrail triggers to `logs/query_log.csv` for monitoring and analysis.
+
+**Groq `openai/gpt-oss-120b`** — originally used `llama-3.3-70b-versatile` (decommissioned August 2026). Migrated to `gpt-oss-120b` — 120B parameters, clean responses, no chain-of-thought output.
+
 ---
 
 ## Known Limitations
@@ -189,20 +199,18 @@ PDF · TXT · DOCX · Max 20MB
 
 **CPU-only inference** — the embedding and reranking models run on CPU. On large documents (100+ pages), upload processing may take 30-60 seconds.
 
-**Groq API dependency** — answer generation requires an active Groq API key. If Groq is unavailable, retrieval still works but generation fails.
+**Entity-value association errors** — when multiple monetary figures appear near each other in a document, the model may associate values with the wrong entity. Known RAG limitation with dense financial documents.
 
 ---
 
 ## Future Work
 
-- AWS EC2 deployment with Docker for persistent hosting and real uptime
 - Multi-document knowledge base support
 - Agentic layer — dynamic decision between document search and web search
 - RAGAS-style evaluation harness for systematic pipeline quality tracking
-- PostgreSQL vector extension as alternative to LanceDB for managed deployments
 
 ---
 
 ## License
 
-MIT
+[MIT](LICENSE)
