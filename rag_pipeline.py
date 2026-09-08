@@ -161,7 +161,7 @@ def generate_answer(query, chunks, chat_history=None):
     if chat_history is None:
         chat_history = []
 
-    llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="qwen/qwen3.6-27b", temperature=0.2)
+    llm = ChatGroq(api_key=os.getenv("GROQ_API_KEY"), model="openai/gpt-oss-120b", temperature=0.2)
 
     context_string = "\n".join(chunks)
 
