@@ -1,11 +1,11 @@
 # HybridRAG - Production-Grade RAG Chatbot
 
-Upload any document and get precise, grounded answers powered by a full hybrid retrieval pipeline — not just basic semantic search.
+Upload any document and get precise, grounded answers powered by a full hybrid retrieval pipeline - not just basic semantic search.
 
 ## Live Demo
 **[https://hybridrag.mohitkrishna.dev](https://hybridrag.mohitkrishna.dev)**
 
-Deployed on AWS EC2 (N. California) — running continuously with HTTPS.
+Deployed on AWS EC2 (N. California) - running continuously with HTTPS.
 
 ![HybridRAG Demo](demo.png)
 
@@ -15,10 +15,10 @@ Deployed on AWS EC2 (N. California) — running continuously with HTTPS.
 
 Most RAG demos use a single embedding model for retrieval. HybridRAG combines four techniques in sequence:
 
-- **Semantic search** — finds conceptually similar chunks via embeddings
-- **BM25 keyword search** — catches exact matches that semantic search misses (codes, names, specific terms)
-- **RRF fusion** — merges both ranked lists into one without score-scale conflicts
-- **Cross-encoder reranking** — re-scores the fused candidates with query+chunk interaction for final precision
+- **Semantic search** - finds conceptually similar chunks via embeddings
+- **BM25 keyword search** - catches exact matches that semantic search misses (codes, names, specific terms)
+- **RRF fusion** - merges both ranked lists into one without score-scale conflicts
+- **Cross-encoder reranking** - re-scores the fused candidates with query+chunk interaction for final precision
 
 ---
 
@@ -128,7 +128,7 @@ Get a free key at [console.groq.com](https://console.groq.com).
 
 ## Running the App
 
-**Option A — Gradio UI (standalone)**
+**Option A - Gradio UI (standalone)**
 
 ```bash
 python app.py
@@ -136,7 +136,7 @@ python app.py
 
 Opens at `http://localhost:7860`
 
-**Option B — FastAPI + Custom HTML UI**
+**Option B - FastAPI + Custom HTML UI**
 
 ```bash
 python -m uvicorn fastapi_backend:app --reload
@@ -144,7 +144,7 @@ python -m uvicorn fastapi_backend:app --reload
 
 Opens at `http://localhost:8000`
 
-**Option C — Docker**
+**Option C - Docker**
 
 ```bash
 docker build -t hybridrag .
@@ -173,40 +173,40 @@ PDF · TXT · DOCX · Max 20MB
 
 ## Key Design Decisions
 
-**LanceDB over FAISS** — LanceDB persists to disk automatically. FAISS is in-memory only — data is lost on every server restart.
+**LanceDB over FAISS** - LanceDB persists to disk automatically. FAISS is in-memory only — data is lost on every server restart.
 
-**Hybrid search over semantic-only** — BM25 catches exact keyword matches (product codes, names, specific terms) that semantic embeddings miss. Pure semantic search would fail on queries like "SKU-AXP-3918".
+**Hybrid search over semantic-only** - BM25 catches exact keyword matches (product codes, names, specific terms) that semantic embeddings miss. Pure semantic search would fail on queries like "SKU-AXP-3918".
 
-**RRF fusion over direct score combination** — BM25 and cosine similarity scores are on incomparable scales. RRF merges by rank position instead of raw scores, making it scale-agnostic.
+**RRF fusion over direct score combination** - BM25 and cosine similarity scores are on incomparable scales. RRF merges by rank position instead of raw scores, making it scale-agnostic.
 
-**Cross-encoder reranking** — bi-encoders embed query and document separately, losing query-document interaction nuance. The cross-encoder processes query + chunk together for final precision, run only on the small fused candidate list to keep latency practical.
+**Cross-encoder reranking** - bi-encoders embed query and document separately, losing query-document interaction nuance. The cross-encoder processes query + chunk together for final precision, run only on the small fused candidate list to keep latency practical.
 
-**Reranker cached at startup** — loading the cross-encoder fresh per request added ~18 seconds of latency. Caching at startup reduced this to ~2-3 seconds.
+**Reranker cached at startup** - loading the cross-encoder fresh per request added ~18 seconds of latency. Caching at startup reduced this to ~2-3 seconds.
 
-**Temperature 0.2** — lower temperature keeps the LLM closer to retrieved context, reducing hallucination in grounded Q&A tasks.
+**Temperature 0.2** - lower temperature keeps the LLM closer to retrieved context, reducing hallucination in grounded Q&A tasks.
 
-**CSV structured logging** — every response logs latency, faithfulness score, and guardrail triggers to `logs/query_log.csv` for monitoring and analysis.
+**CSV structured logging** - every response logs latency, faithfulness score, and guardrail triggers to `logs/query_log.csv` for monitoring and analysis.
 
-**Groq `openai/gpt-oss-120b`** — originally used `llama-3.3-70b-versatile` (decommissioned August 2026). Migrated to `gpt-oss-120b` — 120B parameters, clean responses, no chain-of-thought output.
+**Groq `openai/gpt-oss-120b`** - originally used `llama-3.3-70b-versatile` (decommissioned August 2026). Migrated to `gpt-oss-120b` — 120B parameters, clean responses, no chain-of-thought output.
 
 ---
 
 ## Known Limitations
 
-**Server state persists until restart** — the loaded document index is stored in server memory. Uploading a new document replaces the previous index; the chat clears automatically.
+**Server state persists until restart** - the loaded document index is stored in server memory. Uploading a new document replaces the previous index; the chat clears automatically.
 
-**Single document per session** — multi-document retrieval across a knowledge base is not currently supported.
+**Single document per session** - multi-document retrieval across a knowledge base is not currently supported.
 
-**CPU-only inference** — the embedding and reranking models run on CPU. On large documents (100+ pages), upload processing may take 30-60 seconds.
+**CPU-only inference** - the embedding and reranking models run on CPU. On large documents (100+ pages), upload processing may take 30-60 seconds.
 
-**Entity-value association errors** — when multiple monetary figures appear near each other in a document, the model may associate values with the wrong entity. Known RAG limitation with dense financial documents.
+**Entity-value association errors** - when multiple monetary figures appear near each other in a document, the model may associate values with the wrong entity. Known RAG limitation with dense financial documents.
 
 ---
 
 ## Future Work
 
 - Multi-document knowledge base support
-- Agentic layer — dynamic decision between document search and web search
+- Agentic layer - dynamic decision between document search and web search
 - RAGAS-style evaluation harness for systematic pipeline quality tracking
 
 ---
