@@ -1,4 +1,4 @@
-# HybridRAG — Production-Grade RAG Chatbot
+# HybridRAG - Production-Grade RAG Chatbot
 
 Upload any document and get precise, grounded answers powered by a full hybrid retrieval pipeline — not just basic semantic search.
 
